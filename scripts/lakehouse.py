@@ -79,19 +79,40 @@ def catalog(name: str = "lab"):
 
     d = _catalog_dir(name)
     (d / "warehouse").mkdir(parents=True, exist_ok=True)
-    return SqlCatalog(
+    cat = SqlCatalog(
         name,
         uri=f"sqlite:///{d / 'catalog.db'}",
         warehouse=f"file://{d / 'warehouse'}",
     )
+    # Remember the engine so reset_catalog() can close it — see there for why.
+    _OPEN_ENGINES.setdefault(name, []).append(cat.engine)
+    return cat
+
+
+# name → SQLAlchemy engines this process has opened against that catalog.
+_OPEN_ENGINES: dict[str, list] = {}
 
 
 def reset_catalog(name: str = "lab") -> None:
     """Drop ONE catalog so a notebook rerun starts clean.
 
     Scoped to `name` on purpose — see `_catalog_dir`.
+
+    The engine dispose() is not cosmetic. POSIX lets you unlink a file that is
+    still open, so `rmtree` alone works there. Windows refuses (WinError 32)
+    and — because we pass `ignore_errors=True` — the delete would fail
+    *silently*, leaving the old catalog in place. The next `create_table()`
+    then raises TableAlreadyExistsError, which reads like a corrupt install.
+    That is exactly what a student hits re-running a notebook cell in a live
+    Jupyter kernel, where the previous SqlCatalog is still alive.
     """
     import shutil
+
+    for engine in _OPEN_ENGINES.pop(name, []):
+        try:
+            engine.dispose()
+        except Exception:  # noqa: BLE001 — a dead engine is already "disposed"
+            pass
 
     shutil.rmtree(_catalog_dir(name), ignore_errors=True)
 

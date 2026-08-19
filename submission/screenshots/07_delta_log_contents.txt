@@ -1,0 +1,190 @@
+NB1 — the whole transaction log of a 4-row table
+    2 JSON commits: ['00000000000000000000.json', '00000000000000000001.json']
+
+==============================================================================
+NB1 · commit 0 — CREATE + first WRITE
+==============================================================================
+$ cat _lakehouse\scratch\users_delta\_delta_log\00000000000000000000.json
+
+# protocol + metaData (the schema) + one `add` per data file. This is the
+# entire 'table format': a directory of Parquet plus this ordered log.
+
+{
+  "commitInfo": {
+    "timestamp": 1787113125162,
+    "operation": "WRITE",
+    "operationParameters": {
+      "mode": "Overwrite"
+    },
+    "engineInfo": "delta-rs:py-1.6.2",
+    "clientVersion": "delta-rs.py-1.6.2",
+    "operationMetrics": {
+      "execution_time_ms": 4,
+      "num_added_files": 1,
+      "num_added_rows": 3,
+      "num_partitions": 0,
+      "num_removed_files": 0
+    }
+  }
+}
+{
+  "protocol": {
+    "minReaderVersion": 1,
+    "minWriterVersion": 2
+  }
+}
+{
+  "metaData": {
+    "id": "05691ac5-9389-43ff-9d24-e9be2d62f667",
+    "name": null,
+    "description": null,
+    "format": {
+      "provider": "parquet",
+      "options": {}
+    },
+    "schemaString": "{\"type\":\"struct\",\"fields\":[{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"age\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"city\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}]}",
+    "partitionColumns": [],
+    "createdTime": 1787113125157,
+    "configuration": {}
+  }
+}
+{
+  "add": {
+    "path": "part-00000-30616129-94f9-44b6-9485-7f657636b9ad-c000.snappy.parquet",
+    "partitionValues": {},
+    "size": 1384,
+    "modificationTime": 1787113125161,
+    "dataChange": true,
+    "stats": "{\"numRecords\":3,\"minValues\":{\"name\":\"alice\",\"city\":\"Danang\",\"id\":1,\"age\":25},\"maxValues\":{\"city\":\"Hanoi\",\"id\":3,\"name\":\"charlie\",\"age\":35},\"nullCount\":{\"name\":0,\"city\":0,\"age\":0,\"id\":0}}",
+    "tags": null,
+    "baseRowId": null,
+    "defaultRowCommitVersion": null,
+    "clusteringProvider": null
+  }
+}
+
+==============================================================================
+NB1 · commit 1 — the schema-evolution append (schema_mode='merge')
+==============================================================================
+$ cat _lakehouse\scratch\users_delta\_delta_log\00000000000000000001.json
+
+# note the new metaData: `tier` was appended to the schema in THIS commit.
+# The earlier Parquet files were not rewritten — readers fill NULL.
+
+{
+  "commitInfo": {
+    "timestamp": 1787113125395,
+    "operation": "WRITE",
+    "operationParameters": {
+      "mode": "Append"
+    },
+    "engineInfo": "delta-rs:py-1.6.2",
+    "operationMetrics": {
+      "execution_time_ms": 49,
+      "num_added_files": 1,
+      "num_added_rows": 1,
+      "num_partitions": 0,
+      "num_removed_files": 0
+    },
+    "clientVersion": "delta-rs.py-1.6.2"
+  }
+}
+{
+  "metaData": {
+    "id": "05691ac5-9389-43ff-9d24-e9be2d62f667",
+    "name": null,
+    "description": null,
+    "format": {
+      "provider": "parquet",
+      "options": {}
+    },
+    "schemaString": "{\"type\":\"struct\",\"fields\":[{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"age\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"city\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"tier\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}]}",
+    "partitionColumns": [],
+    "createdTime": 1787113125157,
+    "configuration": {}
+  }
+}
+{
+  "add": {
+    "path": "part-00000-c3cd51fd-e949-4b62-bd6c-fe9bd4a13d81-c000.snappy.parquet",
+    "partitionValues": {},
+    "size": 1548,
+    "modificationTime": 1787113125395,
+    "dataChange": true,
+    "stats": "{\"numRecords\":1,\"minValues\":{\"age\":28,\"city\":\"Hue\",\"tier\":\"premium\",\"id\":4,\"name\":\"dan\"},\"maxValues\":{\"id\":4,\"name\":\"dan\",\"age\":28,\"tier\":\"premium\",\"city\":\"Hue\"},\"nullCount\":{\"tier\":0,\"id\":0,\"age\":0,\"name\":0,\"city\":0}}",
+    "tags": null,
+    "baseRowId": null,
+    "defaultRowCommitVersion": null,
+    "clusteringProvider": null
+  }
+}
+
+==============================================================================
+NB2 · the Z-ORDER commit — where file skipping actually comes from
+==============================================================================
+$ cat _lakehouse\scratch\events_smallfiles\_delta_log\00000000000000000201.json
+
+# every `add` carries a `stats` blob with minValues/maxValues per column.
+# After Z-ORDER the user_id ranges are tight and nearly disjoint, so a
+# query for user_id=4242 prunes 54 of 55 files from the scan (55x).
+
+{
+  "commitInfo": {
+    "timestamp": 1787113157198,
+    "operation": "OPTIMIZE",
+    "operationParameters": {
+      "predicate": "[]",
+      "targetSize": "262144"
+    },
+    "readVersion": 200,
+    "engineInfo": "delta-rs:py-1.6.2",
+    "operationMetrics": {
+      "filesAdded": "{\"avg\":123100.67272727273,\"max\":125822,\"min\":31529,\"totalFiles\":55,\"totalSize\":6770537}",
+      "filesRemoved": "{\"avg\":121987.55223880598,\"max\":122799,\"min\":89615,\"totalFiles\":67,\"totalSize\":8173166}",
+      "maxBinSpanFiles": 67,
+      "numBatches": 123,
+      "numFilesAdded": 55,
+      "numFilesRemoved": 67,
+      "partitionsOptimized": 1,
+      "plannerStrategy": "zOrder",
+      "preserveInsertionOrder": false,
+      "preservedStableOrder": false,
+      "totalConsideredFiles": 67,
+      "totalFilesSkipped": 0
+    },
+    "clientVersion": "delta-rs.py-1.6.2"
+  }
+}
+{
+  "remove": {
+    "path": "part-00000-23c1dae0-a2c7-4004-befe-3aa70fe6486a-c000.zstd.parquet",
+    "dataChange": false,
+    "deletionTimestamp": 1787113155274,
+    "extendedFileMetadata": true,
+    "partitionValues": {},
+    "size": 122422
+  }
+}
+{
+  "remove": {
+    "path": "part-00000-bc48aff3-c219-4216-9879-97a9cf279286-c000.zstd.parquet",
+    "dataChange": false,
+    "deletionTimestamp": 1787113155274,
+    "extendedFileMetadata": true,
+    "partitionValues": {},
+    "size": 122347
+  }
+}
+{
+  "remove": {
+    "path": "part-00000-e8cf206d-a403-48cb-a696-d46240a594d7-c000.zstd.parquet",
+    "dataChange": false,
+    "deletionTimestamp": 1787113155274,
+    "extendedFileMetadata": true,
+    "partitionValues": {},
+    "size": 122542
+  }
+}
+
+... 119 more action(s) in this commit (one `add` per data file)
+

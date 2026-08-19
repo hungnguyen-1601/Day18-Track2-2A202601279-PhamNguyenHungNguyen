@@ -1,0 +1,13 @@
+Lakehouse smoke test — lightweight path (offline)
+
+  ✓ delta write + read
+  ✓ delta time travel + history
+  ✓ delta maintenance (compact / vacuum) — NB6
+  ✓ delta change data feed — NB7
+  ✓ iceberg catalog + append
+  ✓ iceberg scan planning prunes 5 → 1 files
+  ✓ iceberg maintenance API present — NB6
+  ✓ duckdb vector search (core, offline)
+  ✓ duckdb ↔ delta via arrow (no extension download)
+
+All checks passed — the lab is ready. Run `make data && make lab`.

@@ -1,0 +1,583 @@
+========================================================================
+notebooks\01_delta_basics.ipynb
+========================================================================
+shape: (3, 4)
+┌─────┬─────────┬─────┬────────┐
+│ id  ┆ name    ┆ age ┆ city   │
+│ --- ┆ ---     ┆ --- ┆ ---    │
+│ i64 ┆ str     ┆ i64 ┆ str    │
+╞═════╪═════════╪═════╪════════╡
+│ 1   ┆ alice   ┆ 30  ┆ Hanoi  │
+│ 2   ┆ bob     ┆ 25  ┆ HCMC   │
+│ 3   ┆ charlie ┆ 35  ┆ Danang │
+└─────┴─────────┴─────┴────────┘
+
+History:
+  v0  WRITE  {'execution_time_ms': 4, 'num_added_files': 1, 'num_added_rows': 3, 'num_partitions': 0, 'num_removed_files': 0}
+BLOCKED by schema enforcement (expected): Exception: Cast error: Cannot cast string 'thirty' to value of Int64 type
+shape: (4, 5)
+┌─────┬─────────┬─────┬────────┬─────────┐
+│ id  ┆ name    ┆ age ┆ city   ┆ tier    │
+│ --- ┆ ---     ┆ --- ┆ ---    ┆ ---     │
+│ i64 ┆ str     ┆ i64 ┆ str    ┆ str     │
+╞═════╪═════════╪═════╪════════╪═════════╡
+│ 1   ┆ alice   ┆ 30  ┆ Hanoi  ┆ null    │
+│ 2   ┆ bob     ┆ 25  ┆ HCMC   ┆ null    │
+│ 3   ┆ charlie ┆ 35  ┆ Danang ┆ null    │
+│ 4   ┆ dan     ┆ 28  ┆ Hue    ┆ premium │
+└─────┴─────────┴─────┴────────┴─────────┘
+[('premium', 1), (None, 3)]
+  [PASS] _delta_log/ has JSON commits
+  [PASS] schema enforcement blocked bad write
+  [PASS] tier column added via schema_mode=merge
+  [PASS] duckdb sees 2 tier groups
+
+NB1 complete.
+========================================================================
+notebooks\02_optimize_zorder.ipynb
+========================================================================
+Files before OPTIMIZE: 200
+BEFORE OPTIMIZE            count=5  median= 233.1 ms  (n=3)
+Files after OPTIMIZE+ZORDER: 55  (was 200)
+AFTER OPTIMIZE+ZORDER      count=5  median=  32.0 ms  (n=3)
+
+Speedup: 7.3×  (target ≥ 3×)
+File reduction: 200 → 55  (4× fewer)
+Inspecting 00000000000000000201.json:
+  file user_id range: [     1,   1851]
+  file user_id range: [  1851,   3696]
+  file user_id range: [  3696,   5534] ← contains target
+  file user_id range: [  5535,   7366]
+  file user_id range: [  7366,   9178]
+  file user_id range: [  9178,  11014]
+  file user_id range: [ 11014,  12873]
+  file user_id range: [ 12874,  14722]
+  file user_id range: [ 14722,  16568]
+  file user_id range: [ 16568,  18406]
+  file user_id range: [ 18406,  20263]
+  file user_id range: [ 20263,  22115]
+  file user_id range: [ 22115,  23954]
+  file user_id range: [ 23954,  25789]
+  file user_id range: [ 25790,  27641]
+  file user_id range: [ 27641,  29487]
+  file user_id range: [ 29487,  31315]
+  file user_id range: [ 31315,  33149]
+  file user_id range: [ 33149,  34985]
+  file user_id range: [ 34985,  36811]
+  file user_id range: [ 36811,  38666]
+  file user_id range: [ 38666,  40498]
+  file user_id range: [ 40498,  42319]
+  file user_id range: [ 42319,  44175]
+  file user_id range: [ 44175,  46029]
+  file user_id range: [ 46029,  47864]
+  file user_id range: [ 47864,  49708]
+  file user_id range: [ 49708,  51565]
+  file user_id range: [ 51565,  53422]
+  file user_id range: [ 53422,  55261]
+  file user_id range: [ 55261,  57091]
+  file user_id range: [ 57091,  58953]
+  file user_id range: [ 58953,  60795]
+  file user_id range: [ 60795,  62645]
+  file user_id range: [ 62645,  64486]
+  file user_id range: [ 64486,  66332]
+  file user_id range: [ 66332,  68170]
+  file user_id range: [ 68170,  70016]
+  file user_id range: [ 70017,  71881]
+  file user_id range: [ 71881,  73715]
+  file user_id range: [ 73716,  75545]
+  file user_id range: [ 75545,  77401]
+  file user_id range: [ 77401,  79238]
+  file user_id range: [ 79238,  81100]
+  file user_id range: [ 81100,  82959]
+  file user_id range: [ 82959,  84784]
+  file user_id range: [ 84784,  86609]
+  file user_id range: [ 86609,  88461]
+  file user_id range: [ 88461,  90304]
+  file user_id range: [ 90304,  92175]
+  file user_id range: [ 92175,  94024]
+  file user_id range: [ 94024,  95858]
+  file user_id range: [ 95858,  97686]
+  file user_id range: [ 97686,  99535]
+  file user_id range: [ 99535, 100000]
+
+──── Z-order deliverable metrics ────
+  Speedup (wall-clock):     7.3×   (target ≥ 3×)
+  Files-pruned ratio:      55.0×   (target ≥ 10×)   [1 of 55 files cover user_id=4242]
+  [PASS] compaction reduced file count
+  [PASS] speedup ≥ 3x OR pruning ≥ 10x
+  [PASS] stats isolate the target user
+
+  (speedup=7.3x, pruning=55.0x — the slide accepts EITHER;
+   wall-clock is noisy on a laptop, which is why file-pruning is the fallback.)
+
+NB2 complete.
+========================================================================
+notebooks\03_time_travel.ipynb
+========================================================================
+MERGE 100K rows: 0.15s
+  v 3  WRITE                      metrics={'execution_time_ms': 2, 'num_added_files': 1, 'num_added_rows': 50, 'num_partitions': 0, 'num_removed_files': 0}
+  v 2  MERGE                      metrics={'execution_time_ms': 76, 'num_output_rows': 150000, 'num_source_rows': 100000, 'num_target_files_added': 1, 'num_target_files_removed': 1, 'num_target_files_scanned': 1, 'num_target_files_skipped_during_scan': 0, 'num_target_rows_copied': 50000, 'num_target_rows_deleted': 0, 'num_target_rows_inserted': 50000, 'num_target_rows_updated': 50000, 'rewrite_time_ms': 9, 'scan_time_ms': 55}
+  v 1  WRITE                      metrics={'execution_time_ms': 13, 'num_added_files': 1, 'num_added_rows': 100000, 'num_partitions': 0, 'num_removed_files': 1}
+  v 0  WRITE                      metrics={'execution_time_ms': 16, 'num_added_files': 1, 'num_added_rows': 100000, 'num_partitions': 0, 'num_removed_files': 0}
+v0 row count: 100000
+v1 schema:    ['customer_id', 'status', 'score', 'tier']
+RESTORE → v2: 0.03s   (target < 30s)
+Rows with score<0 after restore: 0  (expected 0)
+  v 4  RESTORE                  
+  v 3  WRITE                    
+  v 2  MERGE                    
+  v 1  WRITE                    
+  v 0  WRITE                    
+
+Total versions: 5  (target ≥ 5)
+  [PASS] history ≥ 5 versions
+  [PASS] history includes the RESTORE
+  [PASS] MERGE recorded in history
+  [PASS] bad rows gone after restore
+
+NB3 complete.
+========================================================================
+notebooks\04_medallion.ipynb
+========================================================================
+Bronze rows: 200,000
+shape: (2, 3)
+┌─────────────────────────────────┬─────────────────────────┬─────────────────────────────────┐
+│ request_id                      ┆ ts                      ┆ raw_json                        │
+│ ---                             ┆ ---                     ┆ ---                             │
+│ str                             ┆ datetime[μs, UTC]       ┆ str                             │
+╞═════════════════════════════════╪═════════════════════════╪═════════════════════════════════╡
+│ 758567ce-747b-4ad8-bfbc-c75d3d… ┆ 2026-04-01 00:00:00 UTC ┆ {"model": "claude-sonnet-4-6",… │
+│ 13eca78a-ea32-48cc-9b3a-daf18d… ┆ 2026-04-01 00:00:03 UTC ┆ {"model": "claude-haiku-4-5", … │
+└─────────────────────────────────┴─────────────────────────┴─────────────────────────────────┘
+Silver rows: 190,052  (Bronze 200,000 → dedup dropped 9,948)
+{'numFilesAdded': 8,
+ 'numFilesRemoved': 8,
+ 'filesAdded': '{"avg":2768.75,"max":2770,"min":2766,"totalFiles":8,"totalSize":22150}',
+ 'filesRemoved': '{"avg":2687.875,"max":2689,"min":2687,"totalFiles":8,"totalSize":21503}',
+ 'partitionsOptimized': 8,
+ 'numBatches': 8,
+ 'totalConsideredFiles': 8,
+ 'totalFilesSkipped': 0,
+ 'preserveInsertionOrder': False,
+ 'plannerStrategy': 'zOrder',
+ 'preservedStableOrder': False,
+ 'maxBinSpanFiles': 1}
+shape: (24, 8)
+┌────────────┬────────────┬────────────┬───────────┬───────────┬───────────┬───────────┬───────────┐
+│ date       ┆ model      ┆ p50_latenc ┆ p95_laten ┆ total_pro ┆ total_com ┆ error_rat ┆ cost_usd  │
+│ ---        ┆ ---        ┆ y_ms       ┆ cy_ms     ┆ mpt_token ┆ pletion_t ┆ e         ┆ ---       │
+│ date       ┆ str        ┆ ---        ┆ ---       ┆ s         ┆ okens     ┆ ---       ┆ f64       │
+│            ┆            ┆ f64        ┆ f64       ┆ ---       ┆ ---       ┆ f64       ┆           │
+│            ┆            ┆            ┆           ┆ decimal[3 ┆ decimal[3 ┆           ┆           │
+│            ┆            ┆            ┆           ┆ 8,0]      ┆ 8,0]      ┆           ┆           │
+╞════════════╪════════════╪════════════╪═══════════╪═══════════╪═══════════╪═══════════╪═══════════╡
+│ 2026-04-02 ┆ claude-hai ┆ 565.0      ┆ 1140.0    ┆ 16651653  ┆ 8245961   ┆ 0.049327  ┆ 46.305166 │
+│            ┆ ku-4-5     ┆            ┆           ┆           ┆           ┆           ┆           │
+│ 2026-04-02 ┆ claude-opu ┆ 3004.0     ┆ 5972.0    ┆ 5579305   ┆ 2767949   ┆ 0.052803  ┆ 291.28575 │
+│            ┆ s-4-7      ┆            ┆           ┆           ┆           ┆           ┆           │
+│ 2026-04-02 ┆ claude-son ┆ 1388.0     ┆ 2749.0    ┆ 33145603  ┆ 16392052  ┆ 0.049926  ┆ 345.31758 │
+│            ┆ net-4-6    ┆            ┆           ┆           ┆           ┆           ┆ 9         │
+│ 2026-04-04 ┆ claude-hai ┆ 559.0      ┆ 1125.9    ┆ 15997428  ┆ 7956647   ┆ 0.049224  ┆ 44.62453  │
+│            ┆ ku-4-5     ┆            ┆           ┆           ┆           ┆           ┆           │
+│ 2026-04-04 ┆ claude-opu ┆ 2995.5     ┆ 5940.05   ┆ 5586541   ┆ 2774101   ┆ 0.052158  ┆ 291.85569 │
+│            ┆ s-4-7      ┆            ┆           ┆           ┆           ┆           ┆           │
+│ …          ┆ …          ┆ …          ┆ …         ┆ …         ┆ …         ┆ …         ┆ …         │
+│ 2026-04-01 ┆ claude-opu ┆ 3045.0     ┆ 6035.65   ┆ 3830255   ┆ 1903930   ┆ 0.049735  ┆ 200.24857 │
+│            ┆ s-4-7      ┆            ┆           ┆           ┆           ┆           ┆ 5         │
+│ 2026-04-01 ┆ claude-son ┆ 1381.0     ┆ 2752.0    ┆ 23147249  ┆ 11646949  ┆ 0.050408  ┆ 244.14598 │
+│            ┆ net-4-6    ┆            ┆           ┆           ┆           ┆           ┆ 2         │
+│ 2026-04-07 ┆ claude-hai ┆ 558.0      ┆ 1124.0    ┆ 16551786  ┆ 8257737   ┆ 0.050966  ┆ 46.272377 │
+│            ┆ ku-4-5     ┆            ┆           ┆           ┆           ┆           ┆           │
+│ 2026-04-07 ┆ claude-opu ┆ 3069.0     ┆ 5967.0    ┆ 5442975   ┆ 2713496   ┆ 0.061844  ┆ 285.15682 │
+│            ┆ s-4-7      ┆            ┆           ┆           ┆           ┆           ┆ 5         │
+│ 2026-04-07 ┆ claude-son ┆ 1391.0     ┆ 2748.85   ┆ 32464006  ┆ 16377557  ┆ 0.048627  ┆ 343.05537 │
+│            ┆ net-4-6    ┆            ┆           ┆           ┆           ┆           ┆ 3         │
+└────────────┴────────────┴────────────┴───────────┴───────────┴───────────┴───────────┴───────────┘
+
+──── Gold deliverable metrics ────
+  Distinct dates:     8   (target ≥ 7)
+  Distinct models:    3
+  Total Gold rows:   24   (= dates × models)
+========================================================================
+notebooks\05_iceberg_catalog.ipynb
+========================================================================
+Catalog: SqlCatalog   namespaces: [('lake',)]
+Created ('lake', 'llm_events')
+  location:  file://C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\_lakehouse\iceberg\nb5\warehouse/lake/llm_events
+  metadata:  00000-fd67c9a9-ae9b-43ce-a0bc-f01627ea113a.metadata.json
+  format-v2
+Partition spec: [
+  1000: ts_day: day(2)
+]
+
+Note: 'ts_day' is NOT a column you insert. It is derived from ts.
+Rows:      5,000
+Snapshots: 10   (one per commit)
+Data files: 10
+Files to read, no filter:    10
+Files to read, one-day filter: 1
+→ Pruning ratio: 10×   (target ≥ 5×)
+  rows returned: 500
+Hive user who forgets `WHERE dt=...`:  reads 10 files
+Iceberg user filtering on `ts`:        reads 1 files
+
+At 512 MB/file and $5/TB scanned:
+  wasted per query: 4.5 GB  =  $0.022
+  × 10,000 queries/day  =  $220/day
+
+That is the bill for one forgotten predicate. Hidden partitioning removes
+the opportunity to forget.
+Tier 1  metadata.json     : 00011-9f7eb38b-e00e-4198-85e4-4945e6503587.metadata.json
+Tier 2  manifest lists    : 10 (one per snapshot)
+Tier 3  manifest files    : 10
+        data files        : 10
+
+Metadata log entries: 12
+Partitions tracked  : 10
+data/        47.3 KB   (10 parquet files)
+metadata/   138.3 KB   (20 avro + 12 json)
+→ metadata is 292.4% of table size
+
+At 10 rows/file this looks absurd. At 512 MB/file it is ~0.1%.
+Small files punish you TWICE: more data files AND more metadata to plan over.
+Field IDs before: [(1, 'event_id'), (2, 'ts'), (3, 'model'), (4, 'latency_ms'), (5, 'cost_usd')]
+Field IDs after :
+ [(1, 'event_id'), (2, 'ts'), (3, 'model'), (4, 'latency_millis'), (5, 'cost_usd'), (6, 'tier')]
+
+latency_ms → latency_millis kept field_id=4: a rename rewrote NO data.
+Old rows read back with tier=NULL — no backfill, no migration job.
+Rows still readable: 5,000
+Columns now: ['event_id', 'ts', 'model', 'latency_millis', 'cost_usd', 'tier']
+tier nulls: 5,000 (all pre-existing rows)
+snapshot[0]  1518891725967424140: 500 rows
+snapshot[-1] 1955201674458811031: 5,000 rows
+
+Total snapshots retained: 10
+
+History (last 3):
+  2026-08-19 04:19:38.739000  snapshot=7864575647522920025
+  2026-08-19 04:19:38.891000  snapshot=3599233417286599415
+  2026-08-19 04:19:38.963000  snapshot=1955201674458811031
+Partition specs in use across data files: [1, 2]
+Total rows readable across BOTH specs: 5,500
+
+Two layouts, one table, zero rewrites. This is the feature.
+  [PASS] pruning ratio ≥ 5x
+  [PASS] ≥ 10 snapshots
+  [PASS] field_id stable on rename
+  [PASS] ≥ 2 partition specs
+  [PASS] all rows readable
+
+NB5 complete.
+========================================================================
+notebooks\06_maintenance.ipynb
+========================================================================
+Ingested 100,000 rows in 200 commits (21.4s)
+
+BASELINE (the mess)      files= 200  data=  10.1 MB  log= 382.6 KB (200 json)  rows=100,000
+
+Average file size: 51.5 KB   ← production target is 128–512 MB
+Full-scan GETs/day at 200 files: 10,000,000  →  $4.00/day just in requests
+Same data in 4 compacted files:      200,000  →  $0.08/day
+AFTER compaction         files=  11  data=  16.1 MB  log= 431.3 KB (201 json)  rows=100,000
+
+filesAdded=11  filesRemoved=200
+File reduction: 200 → 11 (18× fewer)
+Note: data bytes went UP slightly — compaction WRITES new files before
+the old ones are reclaimed. You pay twice, briefly. Budget for it.
+Point query user_id=12345
+  before clustering: must open 11/11 files
+  after  clustering: must open 1/10 files
+  → skip rate: 90% of files never touched
+
+Unclustered data has overlapping min/max ranges, so stats prove nothing
+and the engine must read everything. Clustering is what makes stats USEFUL.
+VACUUM would reclaim 211 tombstoned files (0 B)
+AFTER vacuum             files=  10  data=   6.2 MB  log= 442.0 KB (204 json)  rows=100,000
+
+Reclaimed: 16.1 MB
+Time travel to v0 is now GONE — that is the trade you just made.
+Rows reported by the table: 100,000   (orphans are invisible)
+Parquet files on disk:      15
+Parquet files in the log:   10
+→ 5 files you pay for and cannot see
+VACUUM dry-run now finds: 211 files
+Orphans still on disk:    5
+
+`deltalake` (the Rust/Python implementation used here) reclaims files the
+transaction log has TOMBSTONED. A file that was never committed was never
+tombstoned, so the log has no idea it exists.
+
+Spark's VACUUM additionally lists the table directory, which is why the slide
+lists VACUUM under orphan removal — but you should never *assume* your engine
+does the directory pass. Verify it, or run the diff yourself:
+Orphans found: 3  (21.2 KB)
+  part-99990-crashed-writer-c000.snappy.parquet
+  part-99991-crashed-writer-c000.snappy.parquet
+  part-99992-crashed-writer-c000.snappy.parquet
+
+After removal — on disk: 12, in log: 10
+
+⚠️ The age guard is not optional. Without it you will delete files that a
+   concurrent writer has written but not yet committed, and corrupt the table.
+JSON log entries a cold reader would replay: 204
+Checkpoint written: 00000000000000000099.checkpoint.parquet
+_last_checkpoint present: True
+
+A reader now loads 1 checkpoint + the few JSONs after it, not all 200.
+For CDC/streaming tables this is the difference between a 200 ms and a
+20 s cold start — and it is why the slide calls it the 5th job.
+before expiry  snapshots= 20  avro= 40  json= 21  metadata=347.3 KB
+after expiry   snapshots=  3  avro= 40  json= 22  metadata=355.6 KB
+
+Rows still intact: 2,000
+snapshots: 20 → 3  (17 expired)
+avro files on disk: 40 → 40  (deleted: 0)
+metadata bytes: 347.3 KB → 355.6 KB
+
+Expiry alone reclaimed NOTHING. Now find what it stranded:
+Stranded manifest lists: 17  (37.3 KB)
+  snap-1734343157957962852-0-35facdd9-eace-4f28-bae0-fb930f59f18a.avro
+  snap-1754689904898505312-0-258c915a-dc9e-4546-a476-988cc7dd9a1c.avro
+  snap-1908372969537676505-0-11398d93-acb2-466f-a4f1-fc6035824258.avro
+  ... and 14 more
+after sweep    snapshots=  3  avro= 23  json= 22  metadata=318.3 KB
+
+Reclaimed by chaining expiry → orphan removal: 37.3 KB
+Rows still intact: 2,000
+
+→ Job 3 and Job 4 are a PAIR. Running expiry without a sweep is why
+  teams report 'we expire snapshots but the S3 bill never drops'.
+Managed compaction, 500 GB / 2,000,000 files, daily:
+  per-GB component:     $750/mo
+  per-object component: $240/mo
+  TOTAL:                $990/mo
+
+The object component is 24% of the bill —
+it is driven by FILE COUNT, not data volume. Fixing your writer's
+trigger interval is cheaper than paying someone to clean up after it.
+  [PASS] compaction ≥ 10x fewer files
+  [PASS] clustering skips ≥ 50% files
+  [PASS] vacuum reclaimed bytes
+  [PASS] 3 delta orphans removed
+  [PASS] no delta orphans remain
+  [PASS] checkpoint written
+  [PASS] iceberg expired to 3 snaps
+  [PASS] iceberg stranded files swept
+  [PASS] iceberg data intact
+
+NB6 complete.
+========================================================================
+notebooks\07_vectors_multimodal.ipynb
+========================================================================
+Corpus: 2,000 docs, embedding dim=256
+Columns: ['doc_id', 'title', 'topic', 'subject_id', 'source', 'license', 'consent_train', 'generator', 'blob_uri', 'emb']
+inline table :    12.5 MB
+pointer table:     4.7 KB   (+ 12.5 MB of objects alongside)
+
+Total bytes stored is nearly identical — the bytes have to live somewhere.
+The difference is not SIZE. It is what a reader is forced to touch.
+Bytes read by `SELECT topic, count(*) GROUP BY topic`:
+  inline layout : 1.2 KB  of 12.5 MB total
+  pointer layout: 1.2 KB  of 2.4 KB total
+
+→ The blob column costs the analytical scan essentially NOTHING.
+  Projection pushdown is real. The scary advice is wrong for this case.
+inline parquet: 1 row group(s), 200 rows, 12.5 MB per group
+
+Fetching ONE frame (doc_id=137):
+  inline  → must read the row group: 12.5 MB
+  pointer → one GET of the object:   64.0 KB
+  → amplification: 200× more bytes than needed
+
+At 1,000 random frame fetches/sec to feed a GPU, that amplification IS
+the GPU-starvation problem. Formats like Lance restructure the file so a
+random read costs ~one row, not one row group.
+embeddings: 2,000 × 256  (2.0 MB in memory)
+per row: float32 = 1,024 B   int8 = 256 B   (4× smaller)
+at dim=768: float32 = 3,072 B   int8 = 768 B   ← the slide's numbers
+
+On disk (Parquet, compressed):
+  float32: 2.6 MB
+  int8   : 451.9 KB   →  5.8× smaller
+arrow type on read: list<element: float>  → cast to FLOAT[dim] at query time
+This missing type is exactly why Hudi 1.2 added a first-class
+VECTOR(dim, type) column, and why the slide flags it as the 2026 trend.
+
+Query doc: storage-note-00007  (topic=storage)
+
+ doc_id  topic           sim  title
+      7  storage       1.000  storage-note-00007
+   1703  storage       0.779  storage-note-01703
+   1200  storage       0.777  storage-note-01200
+    766  storage       0.776  storage-note-00766
+   1250  storage       0.768  storage-note-01250
+
+brute-force scan over 2,000 vectors: 14.9 ms
+   1703  storage      proprietary   0.779
+   1200  storage      user-owned    0.777
+    766  storage      commercial    0.776
+   1250  storage      user-owned    0.768
+    570  storage      commercial    0.768
+
+No sync job, no ID reconciliation, no 'is this vector still valid?'
+       2,000 vectors → ~    14.9 ms   fine
+     100,000 vectors → ~   747.2 ms   borderline
+   1,000,000 vectors → ~  7471.6 ms   NOT a serving path
+
+Rule from the slide: vector DB = a rebuildable DERIVED INDEX.
+                     lakehouse = the SYSTEM-OF-RECORD.
+recall@10 (exact doc IDs), int8 vs float32: 0.904
+topic fidelity of int8 top-10:              1.000
+storage saved: 83%
+
+→ int8 loses ~10% of exact IDs but 100% of results are still
+  on-topic. The "misses" are swaps between near-equivalent neighbours, which
+  is why exact-ID recall UNDERSTATES quantization quality for RAG.
+  Measure both on YOUR corpus before shipping — the trade is corpus-dependent.
+External index synced: 2,000 vectors
+Erasure request for user_042: 8 docs
+lakehouse rows: 2,000 → 1,992
+external index rows: 2,000   ← untouched
+Erased docs still retrievable from the lakehouse:      0
+Erased docs still retrievable from the external index: 8   ← VIOLATION
+
+The external index will happily return user_042's content to a RAG prompt
+until the next sync — and if the sync is one-way upsert (the common case),
+*forever*, because deletes are the operation sync pipelines forget.
+CDF rows since v1: 8   deletes: 8
+
+Delete events carry the doc_ids to evict: [42, 292, 542, 792, 1042] ...
+
+That is the contract: the index subscribes to deletes instead of guessing.
+Best of all is not needing the sync — keep the vector in the row (§2 above)
+and the lifecycle is enforced by the table itself.
+  [PASS] random-access amplification ≥ 5x
+  [PASS] int8 ≥ 3x smaller
+  [PASS] int8 recall@10 ≥ 0.80
+  [PASS] int8 topic fidelity ≥ 0.95
+  [PASS] top-5 share query topic
+  [PASS] lifecycle bug reproduced
+  [PASS] CDF emits delete events
+
+NB7 complete.
+========================================================================
+notebooks\08_agents_provenance.ipynb
+========================================================================
+Bronze trajectory steps: 1,578
+Silver: 1,578 steps, partitioned by agent_version
+  partitions on disk: ['agent_version=policy-v2', 'agent_version=policy-v3']
+shape: (2, 7)
+┌──────────────┬──────────────┬──────────────┬───────────┬─────────────┬─────────────┬─────────────┐
+│ agent_versio ┆ trajectories ┆ success_rate ┆ avg_steps ┆ avg_cost_us ┆ total_cost_ ┆ avg_seconds │
+│ n            ┆ ---          ┆ ---          ┆ ---       ┆ d           ┆ usd         ┆ ---         │
+│ ---          ┆ i64          ┆ f64          ┆ f64       ┆ ---         ┆ ---         ┆ f64         │
+│ str          ┆              ┆              ┆           ┆ f64         ┆ f64         ┆             │
+╞══════════════╪══════════════╪══════════════╪═══════════╪═════════════╪═════════════╪═════════════╡
+│ policy-v2    ┆ 150          ┆ 0.76         ┆ 5.26      ┆ 0.06915     ┆ 10.37       ┆ 16.2        │
+│ policy-v3    ┆ 150          ┆ 0.753        ┆ 5.26      ┆ 0.06928     ┆ 10.39       ┆ 15.7        │
+└──────────────┴──────────────┴──────────────┴───────────┴─────────────┴─────────────┴─────────────┘
+{
+  "run_id": "rl-run-2026-08-17-001",
+  "policy": "policy-v4",
+  "trajectory_table": "C:\\Users\\Admin\\Desktop\\VinUni\\DAY18-18-8\\Day18-Track2-2A202601279-PhamNguyenHungNguyen\\_lakehouse\\silver\\agent_trajectories",
+  "table_version": 0,
+  "n_steps_seen": 1578
+}
+
+After more rollouts land — table version 1, 1,978 steps
+Replay at pinned version 0: 1,578 steps
+Matches what training saw: True
+
+That one integer is the difference between a reproducible run and a story.
+Catalog now serves: [('lake', 'trajectories')]
+  turn 0: cached=False  tables=['lake.trajectories']
+  turn 1: cached=True  tables=['lake.trajectories']
+  turn 2: cached=True  tables=['lake.trajectories']
+  turn 3: cached=True  tables=['lake.trajectories']
+  turn 4: cached=True  tables=['lake.trajectories']
+
+Actual catalog round-trips for 5 agent turns: 1
+tools/list advertises: {'ttlMs': 60000, 'cacheScope': 'session'}
+resultType: input_required
+prompt:     Confirm delete_rows({'table': 'lake.trajectories', 'where': 'reward = 0'}) — this cannot be undone by the agent.
+
+after human approval → resultType: ok
+
+The agent CANNOT self-approve. That gate is the protocol's, not the model's.
+submit_scan → {'taskId': 'task_0001', 'status': 'working', 'pollAfterMs': 50}
+  tasks/get #0: working
+  tasks/get #1: working
+  tasks/get #2: completed
+  result: {'rows': 300}
+
+Iceberg 1.11 server-side planning returns a plan-id you poll the same way.
+Two protocols, one shape — that is not a coincidence.
+tool            calls   total ms
+delete_rows         1       0.00
+get_schema          1       2.44
+list_tables         5       2.42
+query               1      11.92
+submit_scan         1       0.01
+shape: (5, 3)
+┌────────────────────────┬──────┬──────┐
+│ provenance_bucket      ┆ rows ┆ pct  │
+│ ---                    ┆ ---  ┆ ---  │
+│ str                    ┆ i64  ┆ f64  │
+╞════════════════════════╪══════╪══════╡
+│ licensed               ┆ 675  ┆ 33.8 │
+│ UNCLASSIFIED           ┆ 334  ┆ 16.7 │
+│ public_domain          ┆ 333  ┆ 16.7 │
+│ synthetic              ┆ 331  ┆ 16.6 │
+│ scraped_optout_checked ┆ 327  ┆ 16.4 │
+└────────────────────────┴──────┴──────┘
+
+UNCLASSIFIED rows: 334
+→ Mixing scraped and licensed data in one unlabelled bucket is a 2026 audit failure.
+Partitions on disk:
+  provenance_bucket=UNCLASSIFIED
+  provenance_bucket=licensed
+  provenance_bucket=public_domain
+  provenance_bucket=scraped_optout_checked
+  provenance_bucket=synthetic
+
+Defensible training rows: 1,666 / 2,000
+Excluded as UNCLASSIFIED:  334
+{
+  "model": "vinuni-rag-v1",
+  "corpus_table": "silver.training_corpus_governed",
+  "corpus_version": 0,
+  "rows_used": 1666,
+  "buckets_used": [
+    "licensed",
+    "public_domain",
+    "scraped_optout_checked",
+    "synthetic"
+  ],
+  "excluded_rows": 334,
+  "exclusion_reason": "license=unknown \u2192 fails Art. 10 origin requirement"
+}
+
+DESCRIBE HISTORY → 1 version(s); v0 written by WRITE
+Erasure request from user_007: 8 rows, used as: [{'provenance_bucket': 'licensed', 'rows': 1}, {'provenance_bucket': 'UNCLASSIFIED', 'rows': 5}, {'provenance_bucket': 'scraped_optout_checked', 'rows': 1}, {'provenance_bucket': 'synthetic', 'rows': 1}]
+
+Rows for user_007: 8 → 0
+Table version: 0 → 1
+
+Note the tension the slide flags: time travel means v0 STILL contains
+the erased rows. Deletion is only complete once retention expires those
+versions (NB6, Job 3). "We support time travel" and "we honour erasure" are
+in direct conflict unless your retention window is a deliberate, written
+decision — not a default.
+  [PASS] silver partitioned by agent_version
+  [PASS] gold covers both policies
+  [PASS] version pin replays exactly
+  [PASS] 5 turns → 1 catalog read
+  [PASS] destructive needs confirmation
+  [PASS] confirmed call proceeds
+  [PASS] tasks poll completes
+  [PASS] all 4 Art.10 buckets present
+  [PASS] unclassified rows found
+  [PASS] erasure removed subject rows
+
+NB8 complete.

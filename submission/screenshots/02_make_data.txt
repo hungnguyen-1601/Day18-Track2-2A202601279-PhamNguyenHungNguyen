@@ -1,0 +1,11 @@
+=== make data ===
+Wrote 200,000 rows → C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\_lakehouse\bronze\llm_calls_raw
+  unique request_ids: 190,052  (9,948 duplicates seeded for dedup demo)
+  date span: 7 UTC days from 2026-04-01
+
+=== make data-ai ===
+docs      2,000 rows, dim=256  → C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\_lakehouse\bronze\docs_multimodal
+blobs     200 files, 12.5 MB  → C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\_lakehouse\blobs
+traces    1,578 steps / 300 sessions → C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\_lakehouse\bronze\agent_traces
+
+Ready for NB7 (multimodal + vectors) and NB8 (agents + provenance).

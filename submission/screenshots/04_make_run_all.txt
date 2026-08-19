@@ -1,0 +1,12 @@
+Running 8 notebooks with C:\Users\Admin\Desktop\VinUni\DAY18-18-8\Day18-Track2-2A202601279-PhamNguyenHungNguyen\.venv\Scripts\python.exe
+
+  PASS  01_delta_basics.py                  1.1s
+  PASS  02_optimize_zorder.py              23.8s
+  PASS  03_time_travel.py                   1.1s
+  PASS  04_medallion.py                     1.4s
+  PASS  05_iceberg_catalog.py               3.0s
+  PASS  06_maintenance.py                  26.6s
+  PASS  07_vectors_multimodal.py            4.8s
+  PASS  08_agents_provenance.py             2.8s
+
+8/8 passed in 64.5s
